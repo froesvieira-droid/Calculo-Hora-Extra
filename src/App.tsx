@@ -13,17 +13,17 @@ export default function App() {
   const [workload, setWorkload] = useState<number>(220);
   
   // Hours worked in each category
-  const [hours75, setHours75] = useState<number>(7);
-  const [hours162, setHours162] = useState<number>(2);
-  const [hours100, setHours100] = useState<number>(0);
-  const [hours200, setHours200] = useState<number>(1);
+  const [hours75, setHours75] = useState<number | ''>('');
+  const [hours162, setHours162] = useState<number | ''>('');
+  const [hours100, setHours100] = useState<number | ''>('');
+  const [hours200, setHours200] = useState<number | ''>('');
 
   // Calculations
   const calculations = useMemo(() => {
-    const val75 = hourlyWage * 1.75 * hours75;
-    const val162 = hourlyWage * 2.625 * hours162;
-    const val100 = hourlyWage * 2.00 * hours100;
-    const val200 = hourlyWage * 3.00 * hours200;
+    const val75 = hourlyWage * 1.75 * Number(hours75 || 0);
+    const val162 = hourlyWage * 2.625 * Number(hours162 || 0);
+    const val100 = hourlyWage * 2.00 * Number(hours100 || 0);
+    const val200 = hourlyWage * 3.00 * Number(hours200 || 0);
     
     const totalOvertime = val75 + val162 + val100 + val200;
     const dsr = totalOvertime * 0.20;
@@ -121,7 +121,7 @@ export default function App() {
                   <input 
                     type="number" 
                     value={hours75}
-                    onChange={(e) => setHours75(Number(e.target.value))}
+                    onChange={(e) => setHours75(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
                   />
                 </div>
@@ -130,7 +130,7 @@ export default function App() {
                   <input 
                     type="number" 
                     value={hours162}
-                    onChange={(e) => setHours162(Number(e.target.value))}
+                    onChange={(e) => setHours162(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
                   />
                 </div>
@@ -146,7 +146,7 @@ export default function App() {
                   <input 
                     type="number" 
                     value={hours100}
-                    onChange={(e) => setHours100(Number(e.target.value))}
+                    onChange={(e) => setHours100(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
                   />
                 </div>
@@ -155,7 +155,7 @@ export default function App() {
                   <input 
                     type="number" 
                     value={hours200}
-                    onChange={(e) => setHours200(Number(e.target.value))}
+                    onChange={(e) => setHours200(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
                   />
                 </div>
