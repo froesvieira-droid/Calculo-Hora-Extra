@@ -1,0 +1,5 @@
+{
+  "name": "Calculadora de Horas Extras",
+  "description": "Simulador de cálculo de horas extras com diferentes percentuais (75%, 100%, 162,5%, 200%) e adicional de DSR.",
+  "requestFramePermissions": []
+}
