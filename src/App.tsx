@@ -9,7 +9,7 @@ import { Calculator, Clock, DollarSign, Info, Home, ArrowRight } from 'lucide-re
 
 export default function App() {
   // Inputs
-  const [hourlyWage, setHourlyWage] = useState<number>(19.50);
+  const [hourlyWage, setHourlyWage] = useState<number | ''>('');
   const [workload, setWorkload] = useState<number>(220);
   
   // Hours worked in each category
@@ -20,16 +20,17 @@ export default function App() {
 
   // Calculations
   const calculations = useMemo(() => {
-    const val75 = hourlyWage * 1.75 * Number(hours75 || 0);
-    const val162 = hourlyWage * 2.625 * Number(hours162 || 0);
-    const val100 = hourlyWage * 2.00 * Number(hours100 || 0);
-    const val200 = hourlyWage * 3.00 * Number(hours200 || 0);
+    const wage = Number(hourlyWage || 0);
+    const val75 = wage * 1.75 * Number(hours75 || 0);
+    const val162 = wage * 2.625 * Number(hours162 || 0);
+    const val100 = wage * 2.00 * Number(hours100 || 0);
+    const val200 = wage * 3.00 * Number(hours200 || 0);
     
     const totalOvertime = val75 + val162 + val100 + val200;
     const dsr = totalOvertime * 0.20;
     const totalOvertimeWithDsr = totalOvertime + dsr;
     
-    const baseSalary = hourlyWage * workload;
+    const baseSalary = wage * workload;
     const grandTotal = baseSalary + totalOvertimeWithDsr;
 
     return {
@@ -77,9 +78,20 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-6"
           >
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-blue-700">Informações</h2>
-              <div className="h-px flex-1 bg-blue-100"></div>
+              <button 
+                onClick={() => {
+                  setHourlyWage('');
+                  setHours75('');
+                  setHours162('');
+                  setHours100('');
+                  setHours200('');
+                }}
+                className="text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-full transition-colors"
+              >
+                Limpar tudo
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -92,7 +104,7 @@ export default function App() {
                   <input 
                     type="number" 
                     value={hourlyWage}
-                    onChange={(e) => setHourlyWage(Number(e.target.value))}
+                    onChange={(e) => setHourlyWage(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-sm"
                   />
                 </div>
