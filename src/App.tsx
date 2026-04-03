@@ -8,25 +8,35 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Calculator, Clock, DollarSign, Info, Home, ArrowRight } from 'lucide-react';
 
 export default function App() {
+  interface WorkDay {
+    id: string;
+    hours75: number | '';
+    hours162: number | '';
+    hours100: number | '';
+    hours200: number | '';
+  }
+
   // Inputs
   const [hourlyWage, setHourlyWage] = useState<number | ''>('');
   const [workload, setWorkload] = useState<number>(220);
   
-  // Hours worked in each category
-  const [hours75, setHours75] = useState<number | ''>('');
-  const [hours162, setHours162] = useState<number | ''>('');
-  const [hours100, setHours100] = useState<number | ''>('');
-  const [hours200, setHours200] = useState<number | ''>('');
+  // Days worked
+  const [days, setDays] = useState<WorkDay[]>([{ id: '1', hours75: '', hours162: '', hours100: '', hours200: '' }]);
+  const [expandedDayId, setExpandedDayId] = useState<string | null>('1');
 
   // Calculations
   const calculations = useMemo(() => {
     const wage = Number(hourlyWage || 0);
-    const val75 = wage * 1.75 * Number(hours75 || 0);
-    const val162 = wage * 2.625 * Number(hours162 || 0);
-    const val100 = wage * 2.00 * Number(hours100 || 0);
-    const val200 = wage * 3.00 * Number(hours200 || 0);
     
-    const totalOvertime = val75 + val162 + val100 + val200;
+    const totals = days.reduce((acc, day) => {
+      acc.val75 += wage * 1.75 * Number(day.hours75 || 0);
+      acc.val162 += wage * 2.625 * Number(day.hours162 || 0);
+      acc.val100 += wage * 2.00 * Number(day.hours100 || 0);
+      acc.val200 += wage * 3.00 * Number(day.hours200 || 0);
+      return acc;
+    }, { val75: 0, val162: 0, val100: 0, val200: 0 });
+    
+    const totalOvertime = totals.val75 + totals.val162 + totals.val100 + totals.val200;
     const dsr = totalOvertime * 0.20;
     const totalOvertimeWithDsr = totalOvertime + dsr;
     
@@ -34,17 +44,31 @@ export default function App() {
     const grandTotal = baseSalary + totalOvertimeWithDsr;
 
     return {
-      val75,
-      val162,
-      val100,
-      val200,
+      ...totals,
       totalOvertime,
       dsr,
       totalOvertimeWithDsr,
       baseSalary,
       grandTotal
     };
-  }, [hourlyWage, workload, hours75, hours162, hours100, hours200]);
+  }, [hourlyWage, workload, days]);
+
+  const addDay = () => {
+    const newId = Date.now().toString();
+    setDays([...days, { id: newId, hours75: '', hours162: '', hours100: '', hours200: '' }]);
+    setExpandedDayId(newId);
+  };
+
+  const removeDay = (id: string) => {
+    if (days.length > 1) {
+      setDays(days.filter(d => d.id !== id));
+      if (expandedDayId === id) setExpandedDayId(days[0].id);
+    }
+  };
+
+  const updateDay = (id: string, field: keyof WorkDay, value: number | '') => {
+    setDays(days.map(d => d.id === id ? { ...d, [field]: value } : d));
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -83,10 +107,7 @@ export default function App() {
               <button 
                 onClick={() => {
                   setHourlyWage('');
-                  setHours75('');
-                  setHours162('');
-                  setHours100('');
-                  setHours200('');
+                  setDays([{ id: '1', hours75: '', hours162: '', hours100: '', hours200: '' }]);
                 }}
                 className="text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-full transition-colors"
               >
@@ -124,53 +145,63 @@ export default function App() {
               </div>
             </div>
 
-            {/* Monday to Saturday Section */}
             <div className="space-y-4">
-              <h3 className="font-bold text-slate-700 border-l-4 border-blue-500 pl-3">De segunda a sábado</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Das 5h às 22h - 75%</label>
-                  <input 
-                    type="number" 
-                    value={hours75}
-                    onChange={(e) => setHours75(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Das 22h às 5h - 162,50%</label>
-                  <input 
-                    type="number" 
-                    value={hours162}
-                    onChange={(e) => setHours162(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                  />
-                </div>
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-slate-700">Dias trabalhados</h3>
+                <button 
+                  onClick={addDay}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-full transition-colors"
+                >
+                  + Adicionar dia
+                </button>
               </div>
-            </div>
-
-            {/* Sunday and Holidays Section */}
-            <div className="space-y-4">
-              <h3 className="font-bold text-slate-700 border-l-4 border-orange-500 pl-3">Domingo, Feriados e Dias Compensados</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Das 5h às 22h - 100,00%</label>
-                  <input 
-                    type="number" 
-                    value={hours100}
-                    onChange={(e) => setHours100(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Das 22h às 5h - 200,00%</label>
-                  <input 
-                    type="number" 
-                    value={hours200}
-                    onChange={(e) => setHours200(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                  />
-                </div>
+              
+              <div className="space-y-4">
+                {days.map((day, index) => (
+                  <div key={day.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                    <div 
+                      className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-50"
+                      onClick={() => setExpandedDayId(expandedDayId === day.id ? null : day.id)}
+                    >
+                      <span className="text-xs font-bold text-slate-500 uppercase">Dia {index + 1}</span>
+                      <div className="flex items-center gap-2">
+                        {days.length > 1 && (
+                          <button onClick={(e) => { e.stopPropagation(); removeDay(day.id); }} className="text-xs text-red-500 hover:text-red-700">Remover</button>
+                        )}
+                        <span className="text-slate-400">{expandedDayId === day.id ? '▲' : '▼'}</span>
+                      </div>
+                    </div>
+                    <AnimatePresence>
+                      {expandedDayId === day.id && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-4 pt-0 grid grid-cols-2 gap-4 border-t border-slate-100">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-semibold text-slate-500 uppercase">75% (5h-22h)</label>
+                              <input type="number" value={day.hours75} onChange={(e) => updateDay(day.id, 'hours75', e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-sm" />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-semibold text-slate-500 uppercase">162,5% (22h-5h)</label>
+                              <input type="number" value={day.hours162} onChange={(e) => updateDay(day.id, 'hours162', e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-sm" />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-semibold text-slate-500 uppercase">100% (Dom 5h-22h)</label>
+                              <input type="number" value={day.hours100} onChange={(e) => updateDay(day.id, 'hours100', e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-sm" />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-semibold text-slate-500 uppercase">200% (Dom 22h-5h)</label>
+                              <input type="number" value={day.hours200} onChange={(e) => updateDay(day.id, 'hours200', e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-sm" />
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))}
               </div>
             </div>
           </motion.section>
