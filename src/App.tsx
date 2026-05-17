@@ -37,8 +37,26 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [referenceMonth, setReferenceMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [entryTime, setEntryTime] = useState<string>('');
+  const [exitTime, setExitTime] = useState<string>('');
 
   // Calculations
+  const workedHoursResult = useMemo(() => {
+    if (!entryTime || !exitTime) return null;
+    const [h1, m1] = entryTime.split(':').map(Number);
+    const [h2, m2] = exitTime.split(':').map(Number);
+    let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diffMinutes < 0) diffMinutes += 24 * 60;
+    
+    const h = Math.floor(diffMinutes / 60);
+    const m = diffMinutes % 60;
+    const decimal = diffMinutes / 60;
+    return {
+      formatted: `${h}h ${m.toString().padStart(2, '0')}min`,
+      decimal: decimal.toFixed(2)
+    };
+  }, [entryTime, exitTime]);
+
   const calculations = useMemo(() => {
     const wage = Number(hourlyWage || 0);
     
@@ -209,7 +227,17 @@ export default function App() {
                       className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-50"
                       onClick={() => setExpandedDayId(expandedDayId === day.id ? null : day.id)}
                     >
-                      <span className="text-xs font-bold text-slate-500 uppercase">Dia {index + 1}</span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-xs font-bold text-slate-500 uppercase">Dia {index + 1}</span>
+                          <span className="text-xs font-mono font-semibold text-blue-600">
+                            {formatCurrency(
+                              (Number(day.hours75 || 0) * (Number(hourlyWage || 0) * 1.75)) +
+                              (Number(day.hours162 || 0) * (Number(hourlyWage || 0) * 2.625)) +
+                              (Number(day.hours100 || 0) * (Number(hourlyWage || 0) * 2.00)) +
+                              (Number(day.hours200 || 0) * (Number(hourlyWage || 0) * 3.00))
+                            )}
+                          </span>
+                        </div>
                       <div className="flex items-center gap-2">
                         {days.length > 1 && (
                           <button onClick={(e) => { e.stopPropagation(); removeDay(day.id); }} className="text-xs text-red-500 hover:text-red-700">Remover</button>
@@ -278,6 +306,42 @@ export default function App() {
                   className="overflow-hidden"
                 >
                   <div className="space-y-6">
+                    {/* Calculadora de Horas (Utility) */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <Clock className="w-3 h-3" /> Calculadora de Tempo
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-slate-500 uppercase">Entrada</label>
+                          <input 
+                            type="time" 
+                            value={entryTime}
+                            onChange={(e) => setEntryTime(e.target.value)}
+                            className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-slate-500 uppercase">Saída</label>
+                          <input 
+                            type="time" 
+                            value={exitTime}
+                            onChange={(e) => setExitTime(e.target.value)}
+                            className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                      {workedHoursResult && (
+                        <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">Tempo Total:</span>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-blue-600">{workedHoursResult.formatted}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">({workedHoursResult.decimal}h decimais)</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">De segunda a sábado</h4>
