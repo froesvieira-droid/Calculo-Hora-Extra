@@ -43,17 +43,41 @@ export default function App() {
   // Calculations
   const workedHoursResult = useMemo(() => {
     if (!entryTime || !exitTime) return null;
+
+    const formatDuration = (min: number) => {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      return `${h}h ${m.toString().padStart(2, '0')}min`;
+    };
+
     const [h1, m1] = entryTime.split(':').map(Number);
     const [h2, m2] = exitTime.split(':').map(Number);
-    let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
-    if (diffMinutes < 0) diffMinutes += 24 * 60;
+    const mEntry = h1 * 60 + m1;
+    let mExit = h2 * 60 + m2;
     
-    const h = Math.floor(diffMinutes / 60);
-    const m = diffMinutes % 60;
-    const decimal = diffMinutes / 60;
+    // Se a saída for menor que a entrada, assumimos que passou da meia-noite
+    if (mExit < mEntry) mExit += 1440;
+    
+    const limit22h = 22 * 60; // 1320 (22:00)
+    const limit00h = 24 * 60; // 1440 (00:00)
+    
+    // 1º Período: Entrada até as 22:00
+    const p1Min = Math.max(0, Math.min(mExit, limit22h) - mEntry);
+    
+    // 2º Período: Das 22:00 às 00:00
+    const p2Min = Math.max(0, Math.min(mExit, limit00h) - Math.max(mEntry, limit22h));
+    
+    // 3º Período: Das 00:00 até a saída
+    const p3Min = Math.max(0, mExit - Math.max(mEntry, limit00h));
+
+    const totalMinutes = mExit - mEntry;
+
     return {
-      formatted: `${h}h ${m.toString().padStart(2, '0')}min`,
-      decimal: decimal.toFixed(2)
+      total: formatDuration(totalMinutes),
+      p1: formatDuration(p1Min),
+      p2: formatDuration(p2Min),
+      p3: formatDuration(p3Min),
+      decimal: (totalMinutes / 60).toFixed(2)
     };
   }, [entryTime, exitTime]);
 
@@ -332,11 +356,25 @@ export default function App() {
                         </div>
                       </div>
                       {workedHoursResult && (
-                        <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase">Tempo Total:</span>
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-blue-600">{workedHoursResult.formatted}</p>
-                            <p className="text-[10px] text-slate-400 font-mono">({workedHoursResult.decimal}h decimais)</p>
+                        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
+                          <div className="flex justify-between items-center text-[10px] text-slate-500">
+                            <span className="font-semibold uppercase">1º Período (até 22:00):</span>
+                            <span className="font-mono">{workedHoursResult.p1}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] text-slate-500">
+                            <span className="font-semibold uppercase">2º Período (22:00 às 00:00):</span>
+                            <span className="font-mono">{workedHoursResult.p2}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] text-slate-500">
+                            <span className="font-semibold uppercase">3º Período (00:00 até saída):</span>
+                            <span className="font-mono">{workedHoursResult.p3}</span>
+                          </div>
+                          <div className="pt-2 mt-2 border-t border-slate-100 flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">Tempo Total:</span>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-blue-600">{workedHoursResult.total}</p>
+                              <p className="text-[10px] text-slate-400 font-mono">({workedHoursResult.decimal}h decimais)</p>
+                            </div>
                           </div>
                         </div>
                       )}
